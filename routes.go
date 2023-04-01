@@ -11,9 +11,9 @@ func getRoutes(e *echo.Echo) {
 	e.DELETE("/activity-groups/:id", deleteActivityHandler)
 
 	// Todo Routes
-	e.GET("/todo-items", getAllTodoItems)
-	e.GET("/todo-items/:id", getTodoItem)
-	e.POST("/todo-items", createTodoItem)
-	e.PATCH("/todo-items/:id", updateTodoItem)
-	e.DELETE("/todo-items/:id", deleteTodoItem)
+	e.GET("/todo-items", getAllTodosHandler)
+	e.GET("/todo-items/:id", getTodoHandler)
+	e.POST("/todo-items", createTodoHandler)
+	e.PATCH("/todo-items/:id", updateTodoHandler)
+	e.DELETE("/todo-items/:id", deleteTodoHandler)
 }
