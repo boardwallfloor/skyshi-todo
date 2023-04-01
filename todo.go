@@ -2,9 +2,20 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo"
 )
+
+type Todo struct {
+	ID              int       `json:"id"`
+	ActivityGroupID int       `json:"activity_group_id"`
+	Title           string    `json:"title"`
+	IsActive        bool      `json:"is_active"`
+	Priority        string    `json:"priority"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+}
 
 // Todo Functions
 func getAllTodoItems(c echo.Context) error {

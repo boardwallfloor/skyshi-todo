@@ -4,11 +4,11 @@ import "github.com/labstack/echo"
 
 func getRoutes(e *echo.Echo) {
 	// Activity Routes
-	e.GET("/activity-groups", getAllActivities)
-	e.GET("/activity-groups/:id", getActivity)
-	e.POST("/activity-groups", createActivity)
-	e.PATCH("/activity-groups/:id", updateActivity)
-	e.DELETE("/activity-groups/:id", deleteActivity)
+	e.GET("/activity-groups", getAllActivitiesHandler)
+	e.GET("/activity-groups/:id", getActivityHandler)
+	e.POST("/activity-groups", createActivityHandler)
+	e.PATCH("/activity-groups/:id", updateActivityHandler)
+	e.DELETE("/activity-groups/:id", deleteActivityHandler)
 
 	// Todo Routes
 	e.GET("/todo-items", getAllTodoItems)
