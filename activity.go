@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -11,99 +11,139 @@ import (
 )
 
 type Activity struct {
-	ID        int       `json:"id"`
-	Title     string    `json:"title"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Activity_id int       `json:"id"`
+	Title       string    `json:"title" form:"title"`
+	Email       string    `json:"email" form:"email"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
-func getAllActivitiesHandler(c echo.Context) error {
-	res, err := getAllActivities()
+func (app *App) getAllActivitiesHandler(c echo.Context) error {
+	res, err := app.getAllActivities()
 	if err != nil {
-		log.Fatal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	resJson, err := wrapResp(res, "Success", "Success")
 	if err != nil {
-		log.Fatal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSONBlob(http.StatusOK, resJson)
 }
 
-func getActivityHandler(c echo.Context) error {
+func (app *App) getActivityHandler(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Fatal(err)
+		return echo.NewHTTPError(http.StatusBadRequest, "Bad ID")
 	}
 
-	res, err := getOneActivity(id)
+	res, err := app.getOneActivity(id)
 	if err != nil {
-		log.Fatal(err)
+		if errors.Is(err, ErrIdNotFound) {
+			resJson, err := wrapResp(nil, "Not Found", fmt.Sprintf("Activity with ID %d Not Found", id))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+			return c.JSONBlob(http.StatusNotFound, resJson)
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	resJson, err := wrapResp(res, "Success", "Success")
 	if err != nil {
-		log.Fatal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSONBlob(http.StatusOK, resJson)
 }
 
-func createActivityHandler(c echo.Context) error {
-	title := c.FormValue("title")
-	email := c.FormValue("email")
+func (app *App) createActivityHandler(c echo.Context) error {
 
-	res, err := createActivity(title, email)
+	formData := new(Activity)
+	err := c.Bind(formData)
 	if err != nil {
-		log.Fatal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	if formData.Title == "" {
+		resJson, err := wrapResp(nil, "Bad Request", "title cannot be null")
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		}
+
+		return c.JSONBlob(http.StatusBadRequest, resJson)
+
+	}
+	res, err := app.createActivity(formData.Title, formData.Email)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	resJson, err := wrapResp(res, "Success", "Success")
 	if err != nil {
-		log.Fatal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSONBlob(http.StatusCreated, resJson)
+}
+
+func (app *App) updateActivityHandler(c echo.Context) error {
+
+	formData := new(Activity)
+	err := c.Bind(formData)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	idParam := c.Param("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Bad ID")
+	}
+	res, err := app.updateActivity(id, formData.Title, formData.Email)
+
+	if err != nil {
+		if errors.Is(err, ErrIdNotFound) {
+			resJson, err := wrapResp(nil, "Not Found", fmt.Sprintf("Activity with ID %d Not Found", id))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+
+			return c.JSONBlob(http.StatusNotFound, resJson)
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	resJson, err := wrapResp(res, "Success", "Success")
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSONBlob(http.StatusOK, resJson)
 }
 
-func updateActivityHandler(c echo.Context) error {
+func (app *App) deleteActivityHandler(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Fatal(err)
+		return echo.NewHTTPError(http.StatusBadRequest, "Bad ID")
 	}
 
-	title := c.FormValue("title")
-	email := c.FormValue("email")
-
-	res, err := updateActivity(id, title, email)
+	_, err = app.deleteActivity(id)
 	if err != nil {
-		log.Fatal(err)
+		if errors.Is(err, ErrIdNotFound) {
+			resJson, err := wrapResp(nil, "Not Found", fmt.Sprintf("Activity with ID %d Not Found", id))
+			if err != nil {
+				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			}
+
+			return c.JSONBlob(http.StatusNotFound, resJson)
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
-	resJson, err := wrapResp(res, "Success", "Success")
+	resJson, err := wrapResp(nil, "Success", "Success")
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	return c.JSONBlob(http.StatusOK, resJson)
-}
-
-func deleteActivityHandler(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = deleteActivity(id)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	resJson, err := wrapResp(nil, "Not Found", fmt.Sprintf("Activity with ID %d Not Found", id))
-	if err != nil {
-		log.Fatal(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSONBlob(http.StatusOK, resJson)
