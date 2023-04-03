@@ -60,8 +60,8 @@ func (app *App) migrate() {
 
 func (app *App) Start(e *echo.Echo) {
 	app.migrate()
-	// app.echo.Logger.Fatal(app.echo.Start(":3030"))
-	e.Logger.Fatal(e.Start(":8090"))
+	e.Logger.Fatal(e.Start(":3030"))
+	// e.Logger.Fatal(e.Start(":8090"))
 
 }
 
